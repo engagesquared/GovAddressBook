@@ -1,0 +1,56 @@
+trigger:
+- main
+
+pool:
+  vmImage: "ubuntu-latest"
+
+name: $(Build.DefinitionName)_$(Date:yyMM).$(DayOfMonth)$(Rev:r)
+
+steps:
+  - task: NodeTool@0
+    displayName: Use Node 14.x
+    inputs:
+      versionSpec: "14.x"
+  - script: |
+      sudo curl -sfL https://install.goreleaser.com/github.com/tj/node-prune.sh | sudo bash -s -- -b /usr/local/bin
+    displayName: Install node-prune
+    workingDirectory: "$(System.DefaultWorkingDirectory)/web-app-external"
+  - script: |
+      npm ci
+    displayName: npm ci project
+    workingDirectory: "$(System.DefaultWorkingDirectory)/web-app-external"
+  - script: |
+      npm ci
+    displayName: npm ci common
+    workingDirectory: "$(System.DefaultWorkingDirectory)/common"
+  - script: |
+      npm run build
+    displayName: npm run build
+    workingDirectory: "$(System.DefaultWorkingDirectory)/web-app-external"
+  - script: |
+      npm prune --production
+    displayName: npm prune
+    workingDirectory: "$(System.DefaultWorkingDirectory)/web-app-external"
+  - script: |
+      /usr/local/bin/node-prune
+    displayName: execute node-prune
+    workingDirectory: "$(System.DefaultWorkingDirectory)/web-app-external"
+  - task: CopyFiles@2
+    displayName: Only publish files needed for runtime
+    inputs:
+      SourceFolder: "$(System.DefaultWorkingDirectory)/web-app-external"
+      Contents: |
+        dist/**
+        library/**
+        package.json
+        node_modules/**
+      TargetFolder: "$(Build.ArtifactStagingDirectory)/web-app-external"
+  - task: ArchiveFiles@2
+    inputs:
+      rootFolderOrFile: "$(Build.ArtifactStagingDirectory)/web-app-external"
+      includeRootFolder: false
+      archiveFile: "$(Build.ArtifactStagingDirectory)/web-app-external/$(Build.BuildNumber).zip"
+      archiveType: zip
+  - task: PublishPipelineArtifact@1
+    inputs:
+      targetPath: "$(Build.ArtifactStagingDirectory)/web-app-external/$(Build.BuildNumber).zip"

@@ -1,0 +1,21 @@
+{
+  "bindings": [
+    {
+      "authLevel": "function",
+      "type": "timerTrigger",
+      "schedule": "0 0 */2 * * *",
+      "direction": "in",
+      "name": "req",
+      "methods": [
+        "patch"
+      ],
+      "route": "update"
+    },
+    {
+      "type": "http",
+      "direction": "out",
+      "name": "res"
+    }
+  ],
+  "scriptFile": "../dist/func-app-refresh/funcUserInfoSync/index.js"
+}

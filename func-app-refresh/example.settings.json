@@ -1,0 +1,30 @@
+{
+    "IsEncrypted": false,
+    "Values": {
+        "FUNCTIONS_WORKER_RUNTIME": "node",
+
+        "KEY_VAULT_URL": "https://{{company-name}}-{{environment}}-directory-kv.vault.azure.net/",
+        "KEY_VAULT_SECRET_NAME": "{{company-name}}-{{environment}}-directorypem-certificate",
+
+        "REG_APP_AUTHORITYHOSTURL": "https://login.microsoftonline.com",
+        "REG_APP_TENANTID": "{{reg-app-tenant-id}}",
+        "REG_APP_ID": "{{reg-app-id}}",
+        "REG_APP_SCOPES": ".default",
+        "REG_APP_CERT_THUMBPRINT": "{{reg-app-cert-thumbprint}}",
+
+        "DATABASE_USER": "{{db-user}}",
+        "DATABASE_PASSWORD": "{{db-password}}",
+        "DATABASE_SERVER": "{{company-name}}-{{environment}}-directory-server.database.windows.net",
+        "DATABASE_NAME": "{{company-name}}-{{environment}}-directory-db",
+        "AzureWebJobsStorage": "{{azure-web-jobs-storage-primary-connection-string}}",
+
+        "GRAPH_API_URL": "https://graph.microsoft.com/v1.0",
+
+        "AZURE_SEARCH_URL": "https://{{company-name}}-{{environment}}-directory-srch.search.windows.net",
+        "AZURE_SEARCH_KEY": "{{azure-search-key}}",
+
+        "TEAMS_APP_ID": "bbadf894-f86a-4941-ab9a-9ca047730ecf",
+        "TEAMS_APP_TITLE": "GovAddressBook",
+        "TEAMS_TAB_ID_MYPROFILE": "839c5a75-6562-4a3b-89d0-781300ebd71f"
+    }
+}

@@ -1,0 +1,12 @@
+{
+  "generator-teams": {
+    "promptValues": {
+      "developer": "Engage Squared",
+      "unitTestsEnabled": false,
+      "lintingSupport": false,
+      "useAzureAppInsights": true
+    },
+    "libraryName": "GovAddressBook",
+    "generator-version": "3.2.0"
+  }
+}

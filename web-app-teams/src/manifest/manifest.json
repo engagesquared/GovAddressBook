@@ -1,0 +1,91 @@
+{
+  "$schema": "https://developer.microsoft.com/en-us/json-schemas/teams/v1.9/MicrosoftTeams.schema.json",
+  "manifestVersion": "1.9",
+  "id": "{{TEAMS_APP_ID}}",
+  "version": "1.0.0",
+  "packageName": "{{TEAMS_PACKAGE_NAME}}",
+  "developer": {
+    "name": "Engage Squared",
+    "websiteUrl": "https://{{PUBLIC_HOSTNAME}}",
+    "privacyUrl": "https://{{PUBLIC_HOSTNAME}}/privacy.html",
+    "termsOfUseUrl": "https://{{PUBLIC_HOSTNAME}}/tou.html"
+  },
+  "name": {
+    "short": "{{TEAMS_APP_TITLE}}",
+    "full": "{{TEAMS_APP_TITLE}}"
+  },
+  "description": {
+    "short": "Search for Teams users from other organisations with GovAddressBook.",
+    "full": "GovAddressBook connects Teams users from across different organisations. Connect to another GovAddressBook instance to search their employee directory."
+  },
+  "icons": {
+    "outline": "icon-outline.png",
+    "color": "icon-color.png"
+  },
+  "accentColor": "#0273EB",
+  "configurableTabs": [],
+  "staticTabs": [{
+    "entityId": "{{TEAMS_TAB_ID_SEARCH}}",
+    "scopes": ["personal"],
+    "context": ["personalTab"],
+    "name": "Search",
+    "contentUrl": "https://{{PUBLIC_HOSTNAME}}/tab/#/search",
+    "websiteUrl": "https://{{PUBLIC_HOSTNAME}}/tab/#/search"
+  }, {
+    "entityId": "{{TEAMS_TAB_ID_MYPROFILE}}",
+    "scopes": ["personal"],
+    "context": ["personalTab"],
+    "name": "My Profile",
+    "contentUrl": "https://{{PUBLIC_HOSTNAME}}/tab/#/profile",
+    "websiteUrl": "https://{{PUBLIC_HOSTNAME}}/tab/#/profile"
+  }, {
+    "entityId": "{{TEAMS_TAB_ID_FAVOURITES}}",
+    "scopes": ["personal"],
+    "context": ["personalTab"],
+    "name": "Favourites",
+    "contentUrl": "https://{{PUBLIC_HOSTNAME}}/tab/#/favorites",
+    "websiteUrl": "https://{{PUBLIC_HOSTNAME}}/tab/#/favorites"
+  }, {
+    "entityId": "{{TEAMS_TAB_ID_PARTNERCONNECTIONS}}",
+    "scopes": ["personal"],
+    "context": ["personalTab"],
+    "name": "Partner Connections",
+    "contentUrl": "https://{{PUBLIC_HOSTNAME}}/tab/#/outgoing",
+    "websiteUrl": "https://{{PUBLIC_HOSTNAME}}/tab/#/outgoing"
+  }, {
+    "entityId": "{{TEAMS_TAB_ID_APIKEYS}}",
+    "scopes": ["personal"],
+    "context": ["personalTab"],
+    "name": "API Keys",
+    "contentUrl": "https://{{PUBLIC_HOSTNAME}}/tab/#/incoming",
+    "websiteUrl": "https://{{PUBLIC_HOSTNAME}}/tab/#/incoming"
+  }],
+  "activities": {
+      "activityTypes": [
+          {
+              "type": "freeTextActivity",
+              "description": "GovAddressBook Notification",
+              "templateText": "{body}"
+          }
+      ]
+  },
+  "bots": [],
+  "connectors": [],
+  "composeExtensions": [],
+  "permissions": [
+    "identity",
+    "messageTeamMembers"
+  ],
+  "devicePermissions": [
+    "media"
+  ],
+  "validDomains": [
+    "{{PUBLIC_HOSTNAME}}"
+  ],
+  "webApplicationInfo": {
+    "id": "{{REG_APP_ID}}",
+    "resource": "{{REG_APP_ID_URI}}"
+  },
+  "showLoadingIndicator": true,
+  "isFullScreen": false
+}

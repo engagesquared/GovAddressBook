@@ -1,0 +1,41 @@
+# Node.js with React
+# Build a Node.js project that uses React.
+# Add steps that analyze code, save build artifacts, deploy, and more:
+# https://docs.microsoft.com/azure/devops/pipelines/languages/javascript
+
+pool:
+  vmImage: VS2017-Win2016
+
+name: $(Build.DefinitionName)_$(Date:yyMM).$(DayOfMonth)$(Rev:r)
+steps:
+- bash: |
+   if [ -f extensions.csproj ]
+   then
+       dotnet build extensions.csproj --output ./bin
+   fi
+  displayName: 'Build extensions'
+
+- task: NodeTool@0
+  displayName: 'Use Node version 14.x'
+  inputs:
+    versionSpec: 14.x
+
+- task: Npm@1
+  displayName: 'Install Application Dependencies'
+  inputs:
+    workingDir: '$(System.DefaultWorkingDirectory)/func-app-refresh'
+    verbose: false
+
+- task: Npm@1
+  displayName: 'Install Common Dependencies'
+  inputs:
+    workingDir: '$(System.DefaultWorkingDirectory)/common'
+    verbose: false
+
+- task: Npm@1
+  displayName: 'Run ''build'' script'
+  inputs:
+    command: custom
+    workingDir: '$(System.DefaultWorkingDirectory)/func-app-refresh'
+    verbose: false
+    customCommand: 'run build --if-present'

@@ -1,0 +1,1 @@
+export const APP_ACCESS_TOKEN_HEADER = "x-a-access-token";
