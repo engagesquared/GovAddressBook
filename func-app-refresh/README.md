@@ -21,6 +21,10 @@ npm i
 (do same for `common` project)
 
 For development:
+
+``` bash
+npm i -g azure-functions-core-tools@3 --unsafe-perm true
+```
 - Configure environment file `local.settings.json`, use `example.settings.json` as template.
 - Use http trigger instead of scheduled (`copy config from http_function.json and paste it in function.json`)
 

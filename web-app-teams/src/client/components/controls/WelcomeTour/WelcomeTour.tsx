@@ -34,7 +34,7 @@ export const WelcomeTour = (props: IWelcomeTourProps) => {
   const [dialogOpen, setDialogOpen] = React.useState<boolean>(false);
   const [inProgress, setInProgress] = React.useState<boolean>(false); //May be required in future
 
-  const tourCancelledCacheKey = getCacheKey(currentUser?.UserAadId || "", LOCAL_STORAGE.WELCOME_TOUR);
+  const tourCheckedCacheKey = getCacheKey(currentUser?.UserAadId || "", LOCAL_STORAGE.WELCOME_TOUR);
 
   const imageAltTags = {
     slide1: "Welcome to GovAddressBook",
@@ -103,7 +103,7 @@ export const WelcomeTour = (props: IWelcomeTourProps) => {
       if(currentUser){
         try {
           if (!currentUser?.WelcomeTourCompleted) {
-            const lastCancelled = localStorage.getItem(tourCancelledCacheKey);
+            const lastCancelled = localStorage.getItem(tourCheckedCacheKey);
             if (lastCancelled) {
               const date = new Date(lastCancelled);
               date.setDate(date.getDate() + 1);
@@ -126,26 +126,21 @@ export const WelcomeTour = (props: IWelcomeTourProps) => {
   };
 
   const onFinish = async (): Promise<void> => {
-    let finished = false;
     try {
       setInProgress(true);
       await UserService.finishMyWelcomeTour();
-      finished = true;
     } catch (error) {
       triggerError(error);
     } finally {
-      onCloseDialog(finished);
+      onCloseDialog();
       setInProgress(false);
     }
   };
 
-  const onCloseDialog = (successfullyFinished: boolean) => {
+  const onCloseDialog = () => {
     setDialogOpen(false);
-    if (!successfullyFinished) {
-        // If user has not completed the welcome tour, set local cache so that it doesn't appear again for another day.
-        localStorage.setItem(tourCancelledCacheKey, String(new Date()));
-    }
-    if (currentUser?.Published == false) {
+    localStorage.setItem(tourCheckedCacheKey, String(new Date()));
+    if (!currentUser?.Published) {
       const link = DeepLinkService.deepLinkToTab(env.TEAMS_APP_ID, env.TEAMS_TAB_ID_MYPROFILE, TEAMS_TAB.MY_PROFILE.NAME, TEAMS_TAB.MY_PROFILE.URL);
       executeDeepLink(link);
     }
@@ -157,7 +152,7 @@ export const WelcomeTour = (props: IWelcomeTourProps) => {
         open={dialogOpen}
         backdrop={true}
         closeOnOutsideClick={false}
-        onCancel={() => onCloseDialog(false)}
+        onCancel={() => onCloseDialog()}
         styles={{ padding: "0", width: "35vw" }}
         content={
           <>
