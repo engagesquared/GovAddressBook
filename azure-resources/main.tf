@@ -66,7 +66,6 @@ variable "env" {
     "regAppAuthUrl" = "https://login.microsoftonline.com",
     "regAppTenantId" = "{{reg-app-tenant-id}}",
     "regAppId" = "{{reg-app-id}}",
-    "regAppCertThumbprint" = "{{reg-app-cert-thumbprint}}",
     "regAppScopes" = "User.Read,User.Read.All,Directory.Read.All",
     "regAppScopesDef" = ".default",
     "regAppIdUri" = "api://{{company-name}}-{{environment}}-directory-teams.azurewebsites.net/{{reg-app-id}}",
@@ -108,6 +107,129 @@ provider "azurerm" {
     }
   }
 }
+
+
+# keyVault : START
+resource "azurerm_key_vault" "govaddressbook-key-vault" {
+  name                        = var.keyVault["name"]
+  location            = var.resourceGroup["location"]
+  resource_group_name = var.resourceGroup["name"]
+  enabled_for_disk_encryption = true
+  tenant_id                   = data.azurerm_client_config.current.tenant_id
+  soft_delete_retention_days  = 7
+  purge_protection_enabled    = false
+  sku_name = "standard"
+}
+
+resource "azurerm_key_vault_access_policy" "externalAzureApp-access-policy" {
+  key_vault_id = azurerm_key_vault.govaddressbook-key-vault.id
+  tenant_id = data.azurerm_client_config.current.tenant_id
+  object_id = azurerm_app_service.externalAzureApp-app.identity[0].principal_id
+  
+  certificate_permissions = [
+    "Get","List"
+  ]
+  secret_permissions = [
+    "Get"
+  ]
+}
+
+resource "azurerm_key_vault_access_policy" "teamsAzureApp-access-policy" {
+  key_vault_id = azurerm_key_vault.govaddressbook-key-vault.id
+  tenant_id = data.azurerm_client_config.current.tenant_id
+  object_id = azurerm_app_service.teamsAzureApp-app.identity[0].principal_id
+  certificate_permissions = [
+    "Get","List"
+  ]
+
+  secret_permissions = [
+    "Get"
+  ]
+}
+
+resource "azurerm_key_vault_access_policy" "refreshAzureFunction-access-policy" {
+  key_vault_id = azurerm_key_vault.govaddressbook-key-vault.id
+  tenant_id = data.azurerm_client_config.current.tenant_id
+  object_id = azurerm_function_app.refreshAzureFunction-app.identity[0].principal_id
+  
+  certificate_permissions = [
+    "Get","List"
+  ]
+  secret_permissions = [
+    "Get"
+  ]
+}
+
+resource "azurerm_key_vault_access_policy" "current-user-access-policy" {
+  key_vault_id = azurerm_key_vault.govaddressbook-key-vault.id
+  tenant_id = data.azurerm_client_config.current.tenant_id
+  object_id = data.azurerm_client_config.current.object_id
+  certificate_permissions = [
+    "Get","List","Import", "Delete", "Purge", "Restore", "Create"
+  ]
+
+  secret_permissions = [
+    "Get","List"
+  ]
+
+  key_permissions = [
+    "Get","List"
+  ]
+}
+
+resource "azurerm_key_vault_certificate" "govaddressbook-pem-certificate" {
+  name         = var.keyVault["certificateName"]
+  key_vault_id = azurerm_key_vault.govaddressbook-key-vault.id
+  // added depends_on module to fix permission error
+  depends_on   = [azurerm_key_vault_access_policy.current-user-access-policy]
+
+  certificate_policy {
+    issuer_parameters {
+      name = "Self"
+    }
+
+    key_properties {
+      exportable = true
+      key_size   = 2048
+      key_type   = "RSA"
+      reuse_key  = true
+    }
+
+    lifetime_action {
+      action {
+        action_type = "AutoRenew"
+      }
+
+      trigger {
+        lifetime_percentage = 80
+      }
+    }
+
+    secret_properties {
+      content_type = "application/x-pem-file"
+    }
+
+    x509_certificate_properties {
+      # Server Authentication = 1.3.6.1.5.5.7.3.1
+      # Client Authentication = 1.3.6.1.5.5.7.3.2
+      extended_key_usage = ["1.3.6.1.5.5.7.3.1"]
+
+      key_usage = [
+        "cRLSign",
+        "dataEncipherment",
+        "digitalSignature",
+        "keyAgreement",
+        "keyCertSign",
+        "keyEncipherment",
+      ]
+
+      subject            = "CN=govaddressbook-pem-certificate"
+      validity_in_months = 12
+    }
+  }
+}
+# keyVault : END
+
 
 # refreshAzureFunction : START
 resource "azurerm_storage_account" "refreshAzureFunction-storage" {
@@ -158,7 +280,7 @@ resource "azurerm_function_app" "refreshAzureFunction-app" {
     "REG_APP_TENANTID" = var.env["regAppTenantId"],
     "REG_APP_ID" = var.env["regAppId"],
     "REG_APP_SCOPES" = var.env["regAppScopesDef"],
-    "REG_APP_CERT_THUMBPRINT" = var.env["regAppCertThumbprint"],
+    "REG_APP_CERT_THUMBPRINT" = azurerm_key_vault_certificate.govaddressbook-pem-certificate.thumbprint,
 
     "DATABASE_USER" = var.database["adminName"],
     "DATABASE_PASSWORD" = var.database["adminPassword"],
@@ -247,7 +369,7 @@ resource "azurerm_app_service" "teamsAzureApp-app" {
     "REG_APP_AUTHORITYHOSTURL" = var.env["regAppAuthUrl"],
     "REG_APP_TENANTID" = var.env["regAppTenantId"],
     "REG_APP_ID" = var.env["regAppId"],
-    "REG_APP_CERT_THUMBPRINT" = var.env["regAppCertThumbprint"],
+    "REG_APP_CERT_THUMBPRINT" = azurerm_key_vault_certificate.govaddressbook-pem-certificate.thumbprint,
     "REG_APP_SCOPES" = var.env["regAppScopes"],
     "REG_APP_ID_URI" = var.env["regAppIdUri"],
 
@@ -317,7 +439,7 @@ resource "azurerm_app_service" "externalAzureApp-app" {
     "REG_APP_TENANTID" = var.env["regAppTenantId"],
     "REG_APP_ID" = var.env["regAppId"],
     "REG_APP_SCOPES" = var.env["regAppScopesDef"],
-    "REG_APP_CERT_THUMBPRINT" = var.env["regAppCertThumbprint"],
+    "REG_APP_CERT_THUMBPRINT" = azurerm_key_vault_certificate.govaddressbook-pem-certificate.thumbprint,
 
     "DATABASE_USER" = var.database["adminName"],
     "DATABASE_PASSWORD" = var.database["adminPassword"],
@@ -336,124 +458,6 @@ resource "azurerm_app_service" "externalAzureApp-app" {
 }
 # externalAzureApp : END
 
-# keyVault : START
-resource "azurerm_key_vault" "govaddressbook-key-vault" {
-  name                        = var.keyVault["name"]
-  location            = var.resourceGroup["location"]
-  resource_group_name = var.resourceGroup["name"]
-  enabled_for_disk_encryption = true
-  tenant_id                   = data.azurerm_client_config.current.tenant_id
-  soft_delete_retention_days  = 7
-  purge_protection_enabled    = false
-  sku_name = "standard"
-}
-
-resource "azurerm_key_vault_access_policy" "externalAzureApp-access-policy" {
-  key_vault_id = azurerm_key_vault.govaddressbook-key-vault.id
-  tenant_id = data.azurerm_client_config.current.tenant_id
-  object_id = azurerm_app_service.externalAzureApp-app.identity[0].principal_id
-  
-  certificate_permissions = [
-    "Get","List"
-  ]
-  secret_permissions = [
-    "Get"
-  ]
-}
-
-resource "azurerm_key_vault_access_policy" "teamsAzureApp-access-policy" {
-  key_vault_id = azurerm_key_vault.govaddressbook-key-vault.id
-  tenant_id = data.azurerm_client_config.current.tenant_id
-  object_id = azurerm_app_service.teamsAzureApp-app.identity[0].principal_id
-  certificate_permissions = [
-    "Get","List"
-  ]
-
-  secret_permissions = [
-    "Get"
-  ]
-}
-
-resource "azurerm_key_vault_access_policy" "refreshAzureFunction-access-policy" {
-  key_vault_id = azurerm_key_vault.govaddressbook-key-vault.id
-  tenant_id = data.azurerm_client_config.current.tenant_id
-  object_id = azurerm_function_app.refreshAzureFunction-app.identity[0].principal_id
-  
-  certificate_permissions = [
-    "Get","List"
-  ]
-  secret_permissions = [
-    "Get"
-  ]
-}
-
-resource "azurerm_key_vault_access_policy" "current-user-access-policy" {
-  key_vault_id = azurerm_key_vault.govaddressbook-key-vault.id
-  tenant_id = data.azurerm_client_config.current.tenant_id
-  object_id = data.azurerm_client_config.current.object_id
-  certificate_permissions = [
-    "Get","List","Import", "Delete", "Purge", "Restore", "Create"
-  ]
-
-  secret_permissions = [
-    "Get","List"
-  ]
-
-  key_permissions = [
-    "Get","List"
-  ]
-}
-
-resource "azurerm_key_vault_certificate" "govaddressbook-pem-certificate" {
-  name         = var.keyVault["certificateName"]
-  key_vault_id = azurerm_key_vault.govaddressbook-key-vault.id
-
-  certificate_policy {
-    issuer_parameters {
-      name = "Self"
-    }
-
-    key_properties {
-      exportable = true
-      key_size   = 2048
-      key_type   = "RSA"
-      reuse_key  = true
-    }
-
-    lifetime_action {
-      action {
-        action_type = "AutoRenew"
-      }
-
-      trigger {
-        lifetime_percentage = 80
-      }
-    }
-
-    secret_properties {
-      content_type = "application/x-pem-file"
-    }
-
-    x509_certificate_properties {
-      # Server Authentication = 1.3.6.1.5.5.7.3.1
-      # Client Authentication = 1.3.6.1.5.5.7.3.2
-      extended_key_usage = ["1.3.6.1.5.5.7.3.1"]
-
-      key_usage = [
-        "cRLSign",
-        "dataEncipherment",
-        "digitalSignature",
-        "keyAgreement",
-        "keyCertSign",
-        "keyEncipherment",
-      ]
-
-      subject            = "CN=govaddressbook-pem-certificate"
-      validity_in_months = 12
-    }
-  }
-}
-# keyVault : END
 
 # database: START
 resource "azurerm_sql_server" "govaddressbook-sql-server" {
